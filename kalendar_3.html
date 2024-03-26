@@ -292,7 +292,7 @@
                     button.addEventListener('click', function () {
                         if (!button.classList.contains('disabled')) {
                             selectedRoom = this.dataset.room;
-                            alert(`Вы зарегистрированы на ${selectedDate}.${selectedTime} в ${selectedRoom}`);
+                            alert(`Вы зарегистрированы на ${selectedDate} апреля с ${selectedTime} в ${selectedRoom}`);
                             availableTimesContainer.style.display = 'none';
                             disableSelectedOptions();
                             bookRoom(selectedDate, selectedTime, selectedRoom);
@@ -348,5 +348,6 @@
     </script>
 </body>
 </html>
+
 
 
