@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь с записью</title>
+    <style>
+        body {
+            background-image: url('1234.jpg'); /* Укажите путь к вашему изображению */
+            background-size: cover; /* Изображение будет масштабировано так, чтобы заполнить всю область фона */
+            background-repeat: no-repeat; /* Изображение не будет повторяться */
+            background-position: center; /* Изображение будет выровнено по центру */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #calendar-container {
+            text-align: center;
+            border: 2px solid #555;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #ffffff;
+            max-width: 600px;
+        }
+
+        #calendar {
+            margin-bottom: 20px;
+        }
+
+        .dateBlock {
+            display: inline-block;
+            width: 50px;
+            height: 40px;
+            line-height: 40px;
+            border: 1px solid #ffffff;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #4CAF50; /* Изменение цвета фона на зеленый */
+            color: white; /* Изменение цвета текста на белый */
+            font-weight: bold; /* Увеличение жирности текста */
+            font-size: 14px; /* Изменение размера шрифта */
+        }
+
+        #availableTimes {
+            text-align: center;
+            display: none;
+        }
+
+        .timeButton, .roomButton {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin: 2px;
+        }
+
+        .timeButton:hover, .roomButton:hover {
+            background-color: #357934;
+        }
+
+        .backButton {
+            margin-bottom: 10px;
+            background-color: #424040;
+            color: #ffffff;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .backButton:hover {
+            background-color: #4c504c;
+        }
+
+        .selectedDate {
+            background-color: #ffa500;
+        }
+
+        .disabled {
+            background-color: #ff0000 !important;
+            cursor: not-allowed;
+            pointer-events: none;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .disabled:hover {
+            background-color: #ff0000 !important;
+            cursor: not-allowed;
+        }
+
+        .booked {
+            opacity: 0.5;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .weekdays {
+            display: flex;
+            justify-content:center;
+            margin-bottom: 10px;
+        }
+
+        .weekdays .weekday {
+            width: 50px;
+            font-weight: bold;
+            margin: 0 6px;
+        }
+
+        h1 {
+            font-family: 'Arial Black', Arial, sans-serif;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="calendar-container">
+        <h1>Пожалуйста, выберите дату для записи!</h1>
+        <div id="calendar"></div>
+        <div id="availableTimes"></div>
+    </div>
+
+    <script>
+        const bookedDates = {};
+        const bookedRooms = {};
+
+        function goBack() {
+            const selectedDate = null;
+            const selectedTime = null;
+            const selectedRoom = null;
+            const availableTimesContainer = document.getElementById('availableTimes');
+            availableTimesContainer.style.display = 'none';
+            removeSelectedDate();
+            displayCalendar();
+        }
+
+        function removeSelectedDate() {
+            const dateBlocks = document.querySelectorAll('.dateBlock');
+            dateBlocks.forEach(block => {
+                block.classList.remove('selectedDate');
+            });
+        }
+
+        function areAllRoomsBooked(date, time) {
+            const roomsForTime = bookedRooms[date] && bookedRooms[date][time];
+            return roomsForTime && roomsForTime.length === 5;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarContainer = document.getElementById('calendar');
+            const availableTimesContainer = document.getElementById('availableTimes');
+            let selectedDate = null;
+            let selectedTime = null;
+            let selectedRoom = null;
+
+            function displayCalendar() {
+                const currentDate = new Date();
+                const currentMonth = 3;
+                const currentYear = currentDate.getFullYear();
+
+                const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+                calendarContainer.innerHTML = '';
+
+                // Добавление дней недели
+                const weekdays = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+                const weekdaysDiv = document.createElement('div');
+                weekdaysDiv.className = 'weekdays';
+                weekdays.forEach(day => {
+                    const weekdayDiv = document.createElement('div');
+                    weekdayDiv.className = 'weekday';
+                    weekdayDiv.textContent = day;
+                    weekdaysDiv.appendChild(weekdayDiv);
+                });
+                calendarContainer.appendChild(weekdaysDiv);
+
+                let rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+                calendarContainer.appendChild(rowDiv);
+
+                let dayIndex = 1; // Начальное значение для отрисовки чисел месяца
+
+                // Добавляем пустые дивы перед первым числом месяца, если оно не понедельник
+                const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay(); // День недели первого числа месяца (0 - воскресенье, 1 - понедельник, и т.д.)
+                if (firstDayOfMonth !== 1) {
+                    const emptyDays = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+                    for (let j = 0; j < emptyDays; j++) {
+                        const emptyDiv = document.createElement('div');
+                        emptyDiv.className = 'dateBlock';
+                        rowDiv.appendChild(emptyDiv);
+                        dayIndex++;
+                    }
+                }
+
+                for (let i = 1; i <= 30; i++) {
+                    const date = new Date(currentYear, currentMonth, i);
+                    const isToday = currentDate.toDateString() === date.toDateString();
+                    const isSelected = selectedDate === i.toString();
+                    const isBooked = bookedDates[i.toString()];
+                    const classNames = isToday ? 'dateBlock today' : 'dateBlock';
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = classNames + (isSelected ? 'selectedDate' : '') + (isBooked ? ' booked' : '');
+                    dateDiv.dataset.date = i;
+                    dateDiv.textContent = i;
+                    rowDiv.appendChild(dateDiv);
+
+                    // Переход на следующую строку после каждой седьмой кнопки
+                    if ((dayIndex + i - 1) % 7 === 0 && i !== 30) {
+                        rowDiv = document.createElement('div');
+                        rowDiv.className = 'row';
+                        calendarContainer.appendChild(rowDiv);
+                    }
+
+                    // Если достигнут конец месяца, завершаем отрисовку
+                    if (i === 30) {
+                        // Добавление пустых ячеек после последнего числа месяца, если он не в воскресенье
+                        if (date.getDay() !== 0) {
+                            const remainingDays = 7 - date.getDay();
+                            for (let j = 0; j < remainingDays; j++) {
+                                const emptyDiv = document.createElement('div');
+                                emptyDiv.className = 'dateBlock';
+                                rowDiv.appendChild(emptyDiv);
+                                dayIndex++;
+                            }
+                        }
+                    }
+                }
+
+                // Attach event listener to date blocks
+                const dateBlocks = document.querySelectorAll('.dateBlock');
+                dateBlocks.forEach(block => {
+                    block.addEventListener('click', function () {
+                        selectedDate = this.dataset.date;
+                        selectedTime = null;
+                        selectedRoom = null;
+                        removeSelectedDate();
+                        this.classList.add('selectedDate');
+                        displayAvailableTimes(selectedDate);
+                    });
+                });
+            }
+
+            function displayAvailableTimes(date) {
+                // Simulate available times
+                const availableTimes = [];
+                for (let i = 8; i <= 16; i += 2) {
+                    availableTimes.push(`${i}:00 - ${i + 2}:00`);
+                }
+
+                let html = '<button class="backButton" onclick="goBack()">Назад</button><h3>Выберите время:</h3>';
+                availableTimes.forEach(time => {
+                    const isDisabled = selectedTime && selectedTime !== time || areAllRoomsBooked(selectedDate, time);
+                    html += `<button class="timeButton${isDisabled ? ' disabled' : ''}" data-time="${time}">${time}</button>`;
+                });
+                availableTimesContainer.style.display = 'block';
+                availableTimesContainer.innerHTML = html;
+
+                const timeButtons = document.querySelectorAll('.timeButton');
+                timeButtons.forEach(button => {
+                    button.addEventListener('click', function () {
+                        if (!button.classList.contains('disabled')) {
+                            selectedTime = this.dataset.time;
+                            selectedRoom = null;
+                            displayAvailableRooms(selectedDate, selectedTime);
+                        }
+                    });
+                });
+            }
+
+            function displayAvailableRooms(date, time) {
+                const availableRooms = ['Аудитория 101', 'Аудитория 102', 'Аудитория 103', 'Аудитория 104', 'Аудитория 105'];
+
+                let html = '<button class="backButton" onclick="goBack()">Назад</button><h3>Выберите аудиторию:</h3>';
+                availableRooms.forEach(room => {
+                    const isDisabled = selectedRoom && selectedRoom !== room || bookedRooms[date] && bookedRooms[date][time] && bookedRooms[date][time].includes(room);
+                    html += `<button class="roomButton${isDisabled ? ' disabled' : ''}" data-room="${room}">${room}</button>`;
+                });
+                availableTimesContainer.innerHTML = html;
+
+                const roomButtons = document.querySelectorAll('.roomButton');
+                roomButtons.forEach(button => {
+                    button.addEventListener('click', function () {
+                        if (!button.classList.contains('disabled')) {
+                            selectedRoom = this.dataset.room;
+                            alert(`Вы зарегистрированы на ${selectedDate}.${selectedTime} в ${selectedRoom}`);
+                            availableTimesContainer.style.display = 'none';
+                            disableSelectedOptions();
+                            bookRoom(selectedDate, selectedTime, selectedRoom);
+                            removeSelectedDate();
+                        }
+                    });
+                });
+            }
+
+            function disableSelectedOptions() {
+                const timeButtons = document.querySelectorAll('.timeButton');
+                timeButtons.forEach(button => {
+                    if (button.dataset.time === selectedTime) {
+                        button.classList.add('disabled');
+                    }
+                });
+
+                const roomButtons = document.querySelectorAll('.roomButton');
+                roomButtons.forEach(button => {
+                    if (button.dataset.room === selectedRoom) {
+                        button.classList.add('disabled');
+                    }
+                });
+
+                const dateBlock = document.querySelector(`.dateBlock[data-date="${selectedDate}"]`);
+                if (dateBlock && bookedDates[selectedDate] === 25) {
+                    dateBlock.classList.add('disabled');
+                }
+            }
+
+            function bookRoom(date, time, room) {
+                if (!bookedRooms[date]) {
+                    bookedRooms[date] = {};
+                }
+                if (!bookedRooms[date][time]) {
+                    bookedRooms[date][time] = [];
+                }
+                bookedRooms[date][time].push(room);
+
+                if (!bookedDates[date]) {
+                    bookedDates[date] = 0;
+                }
+                bookedDates[date]++;
+
+                const dateBlock = document.querySelector(`.dateBlock[data-date="${date}"]`);
+                if (dateBlock && bookedDates[date] === 25) {
+                    dateBlock.classList.add('disabled');
+                }
+            }
+
+            displayCalendar();
+        });
+    </script>
+</body>
+</html>
+
