@@ -196,7 +196,7 @@
                     const emptyDays = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
                     for (let j = 0; j < emptyDays; j++) {
                         const emptyDiv = document.createElement('div');
-                        emptyDiv.className = 'dateBlock';
+                        emptyDiv.className = 'dateBlock disabled';
                         rowDiv.appendChild(emptyDiv);
                         dayIndex++;
                     }
@@ -209,7 +209,7 @@
                     const isBooked = bookedDates[i.toString()];
                     const classNames = isToday ? 'dateBlock today' : 'dateBlock';
                     const dateDiv = document.createElement('div');
-                    dateDiv.className = classNames + (isSelected ? 'selectedDate' : '') + (isBooked ? ' booked' : '');
+                    dateDiv.className = classNames + (isSelected ? ' selectedDate' : '') + (isBooked ? ' booked' : '');
                     dateDiv.dataset.date = i;
                     dateDiv.textContent = i;
                     rowDiv.appendChild(dateDiv);
@@ -228,7 +228,7 @@
                             const remainingDays = 7 - date.getDay();
                             for (let j = 0; j < remainingDays; j++) {
                                 const emptyDiv = document.createElement('div');
-                                emptyDiv.className = 'dateBlock';
+                                emptyDiv.className = 'dateBlock disabled';
                                 rowDiv.appendChild(emptyDiv);
                                 dayIndex++;
                             }
@@ -237,7 +237,7 @@
                 }
 
                 // Attach event listener to date blocks
-                const dateBlocks = document.querySelectorAll('.dateBlock');
+                const dateBlocks = document.querySelectorAll('.dateBlock:not(.disabled)');
                 dateBlocks.forEach(block => {
                     block.addEventListener('click', function () {
                         selectedDate = this.dataset.date;
@@ -348,4 +348,5 @@
     </script>
 </body>
 </html>
+
 
